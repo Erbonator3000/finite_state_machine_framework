@@ -1,13 +1,23 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(fsm_lib)
+project("Finite state machine framework"
+        LANGUAGES C
+        VERSION 1.0.0
+)
 
-add_executable(main)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
-target_sources(main PRIVATE src/main.c src/fsm.c)
-target_include_directories(main PRIVATE inc)
+option(BUILD_EXAMPLES "Build FSM examples" ON)
+option(BUILD_TESTS "Build FSM tests" ON)
 
-target_compile_options(main
+add_library(fsm)
+
+target_sources(fsm PRIVATE src/fsm.c)
+target_include_directories(fsm PUBLIC inc)
+
+target_compile_options(fsm
   PRIVATE
   -Werror
   -Wall
@@ -18,4 +28,14 @@ target_compile_options(main
   -Wimplicit-fallthrough
   -Werror=implicit-function-declaration
   -Wno-sign-conversion
+  -Wstrict-prototypes
+  -Wmissing-prototypes
 )
+
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

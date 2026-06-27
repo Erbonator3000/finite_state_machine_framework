@@ -1,26 +1,68 @@
+/* Copyright (c) 2026 Eero Prittinen, SPDX-License-Identifier: MIT */
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
 #include "fsm.h"
 
-/**
- * @brief Marks event as triggered
- * @param event
- */
-void trigger_event(event_t *event) {
-    event->triggered = true;
+static bool fsm_validate(const struct fsm_t *const fsm) {
+    // Check trough all state transitions and check that all states are within this state machine
+    // Check initial state also
+    bool initial_state_ok = false;
+    for (size_t i = 0; i < fsm->state_count; i++) {
+        // Check initial state
+        if (fsm->states[i] == fsm->initial_state) {
+            initial_state_ok = true;
+        }
+
+        if (fsm->states[i]->transitions == NULL) {
+            return false;
+        }
+
+        for (size_t j = 0; j < fsm->states[i]->transition_count; j++) {
+            bool transition_ok = false;
+            for (size_t k = 0; k < fsm->state_count; k++) {
+                if (fsm->states[i]->transitions[j].next == fsm->states[k]) {
+                    transition_ok = true;
+                    break;
+                }
+            }
+            if (!transition_ok) {
+                return false;
+            }
+        }
+    }
+    return initial_state_ok;
 }
 
 /**
  * @brief Runs one iteration of state machine
  * @param fsm Finite state machine to operate on
- * @return FSM_STATUS_OK on success, FSM_STATUS_INVALID_FSM on invalid fsm, or FSM_STATUS_INVALID_STATE on invalid state
+ * @param event Event triggered and fed to the fsm
+ * @retval FSM_STATUS_OK Success
+ * @retval FSM_STATUS_INVALID_FSM Invalid fsm
+ * @retval FSM_STATUS_INVALID_STATE Invalid state
  */
-fsm_machine_status_t fsm_run(struct fsm_t *const fsm) {
+fsm_machine_status_t fsm_run(struct fsm_t *const fsm, const event_t event) {
     const struct transition_t *next_transition = NULL;
     if (fsm == NULL) {
         return FSM_STATUS_INVALID_FSM;
+    }
+
+    // Special handling for the initial state
+    if (!fsm->running) {
+        // Validate fsm once on start
+        if (!fsm_validate(fsm)) {
+            return FSM_STATUS_INVALID_FSM;
+        }
+
+        fsm->current_state = fsm->initial_state;
+        fsm->running = true;
+        if (fsm->current_state->handler != NULL) {
+            fsm->current_state->handler(fsm->ctx);
+        }
+        // Continue to normal operation to evaluate event, (if supplied)
     }
 
     if (fsm->current_state == NULL) {
@@ -32,26 +74,33 @@ fsm_machine_status_t fsm_run(struct fsm_t *const fsm) {
     }
 
     for (size_t i = 0; i < fsm->current_state->transition_count; i++) {
-        if (fsm->current_state->transitions[i].event->triggered == true) {
+        if (fsm->current_state->transitions[i].event == event) {
             next_transition = &fsm->current_state->transitions[i];
             break;
         }
     }
+
+    // No transition found
+    if (next_transition == NULL) {
+        return FSM_STATUS_OK;
+    }
+
     // No next tranistion -> go back to waiting events
     if (next_transition == NULL) {
         return FSM_STATUS_OK;
     }
 
-    // Clear event
-    next_transition->event->triggered = false;
-
-    if (next_transition->next != NULL) {
-        fsm->current_state = next_transition->next;
+    // If no next state -> go back to waiting events
+    if (next_transition->next == NULL) {
+        return FSM_STATUS_OK;
     }
+
+    fsm->current_state = next_transition->next;
+
     // If event defined but no next state -> redo current state
 
     if (fsm->current_state->handler != NULL) {
-        fsm->current_state->handler();
+        fsm->current_state->handler(fsm->ctx);
     }
     return FSM_STATUS_OK;
 }

@@ -2,19 +2,19 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <unistd.h> // For sleep
 #include "fsm.h"
 
-void hand(void) {
+void hand(void *ctx) {
     printf("Handling1...\n");
 }
 
-void hand2(void) {
+void hand2(void *ctx) {
     printf("Handling2...\n");
 }
 
 /* Events*/
 DEFINE_EVENT(event1);
-// DEFINE_EVENT(event2);
 
 /* States */
 DECLARE_STATE(state1);
@@ -33,18 +33,19 @@ DEFINE_STATE(state1, hand);
 DEFINE_STATE(state2, hand2);
 
 /* State machine construct */
-FSM_STATES(foo) = { state1, state2 };
-DEFINE_FSM(foo);
+FSM_STATES(state_machine1) = { state1, state2 };
+DEFINE_FSM(state_machine1, state2, NULL);
 
 int main(void) {
     fsm_machine_status_t fsm_status;
     while (true) {
-        trigger_event(&event1);
-        fsm_status = fsm_run(&foo);
+        fsm_status = fsm_run(&state_machine1, event1);
         if (fsm_status != FSM_STATUS_OK) {
             printf("FSM failed");
             break;
         }
+
+        sleep(1);
     }
     return 0;
 }
