@@ -5,11 +5,13 @@
 #include <unistd.h> // For sleep
 #include "fsm.h"
 
-void hand(void *ctx) {
+static void hand(void *ctx) {
+    (void) ctx;
     printf("Handling1...\n");
 }
 
-void hand2(void *ctx) {
+static void hand2(void *ctx) {
+    (void) ctx;
     printf("Handling2...\n");
 }
 
