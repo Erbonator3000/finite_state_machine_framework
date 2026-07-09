@@ -2,7 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 project(fsm_tests C)
 
+include(CTest)
 enable_testing()
+
+option(FSM_ENABLE_COVERAGE "Enable coverage reporting for GCC or Clang" FALSE)
+set(CMAKE_BUILD_TYPE "Debug")
+if (FSM_ENABLE_COVERAGE)
+    target_compile_options(fsm PUBLIC -coverage -O0 -fprofile-arcs -ftest-coverage)
+    target_link_options(fsm PUBLIC -coverage -O0 -fprofile-arcs -ftest-coverage)
+endif()
 
 # Basic state transition test
 add_executable(basic_state_transition_test
