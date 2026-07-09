@@ -136,3 +136,15 @@ add_test(
     NAME basic_context_test
     COMMAND basic_context_test
 )
+
+# Current state tamper test
+add_executable(current_state_tamper_test
+    current_state_tamper_test.c
+)
+
+target_link_libraries(current_state_tamper_test PRIVATE fsm)
+
+add_test(
+    NAME current_state_tamper_test
+    COMMAND current_state_tamper_test
+)
