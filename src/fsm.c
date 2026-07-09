@@ -21,6 +21,12 @@ static bool fsm_validate(const struct fsm_t *const fsm) {
         }
 
         for (size_t j = 0; j < fsm->states[i]->transition_count; j++) {
+            // Check for invalid value
+            if (fsm->states[i]->transitions[j].next == NULL) {
+                return false;
+            }
+
+            // Check for transition contained in thsi state machine
             bool transition_ok = false;
             for (size_t k = 0; k < fsm->state_count; k++) {
                 if (fsm->states[i]->transitions[j].next == fsm->states[k]) {
@@ -69,10 +75,7 @@ fsm_machine_status_t fsm_run(struct fsm_t *const fsm, const event_t event) {
         return FSM_STATUS_INVALID_STATE;
     }
 
-    if (fsm->current_state->transitions == NULL) {
-        return FSM_STATUS_INVALID_FSM;
-    }
-
+    // All states transition lists are checked to be not NULL in fsm_validate
     for (size_t i = 0; i < fsm->current_state->transition_count; i++) {
         if (fsm->current_state->transitions[i].event == event) {
             next_transition = &fsm->current_state->transitions[i];
@@ -80,24 +83,13 @@ fsm_machine_status_t fsm_run(struct fsm_t *const fsm, const event_t event) {
         }
     }
 
-    // No transition found
-    if (next_transition == NULL) {
-        return FSM_STATUS_OK;
-    }
-
     // No next tranistion -> go back to waiting events
     if (next_transition == NULL) {
         return FSM_STATUS_OK;
     }
 
-    // If no next state -> go back to waiting events
-    if (next_transition->next == NULL) {
-        return FSM_STATUS_OK;
-    }
-
+    // next_transition->next != NULL Checked already in fsm_validate
     fsm->current_state = next_transition->next;
-
-    // If event defined but no next state -> redo current state
 
     if (fsm->current_state->handler != NULL) {
         fsm->current_state->handler(fsm->ctx);
