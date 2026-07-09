@@ -7,15 +7,8 @@
  * afterwards
  */
 
-static int state1_call_count = 0;
-static int state2_call_count = 0;
-
 void hand1(void *ctx) {
-    state1_call_count++;
-}
-
-void hand2(void *ctx) {
-    state2_call_count++;
+    (void) ctx;
 }
 
 /* Events*/
